@@ -16,17 +16,37 @@ def get_cart(current_user):
     
     cart['_id'] = str(cart['_id'])
     
-    # Calculate total
+    # Enhance cart items with product details
+    enhanced_items = []
     total = 0
+    
     for item in cart.get('items', []):
         product = get_db().products.find_one({'_id': ObjectId(item['productId'])})
         if product:
-            # Apply discount if available
+            # Calculate price with discount
             price = product['price']
             if product.get('discount'):
                 price = price - (price * product['discount'] / 100)
-            total += price * item['quantity']
+            
+            # Create enhanced item with product details
+            enhanced_item = {
+                'productId': item['productId'],
+                'name': product['name'],
+                'price': price,
+                'image': product['images'][0] if product.get('images') else None,
+                'quantity': item['quantity'],
+                'size': item.get('size'),
+                'color': item.get('color')
+            }
+            
+            # Calculate item total
+            item_total = price * item['quantity']
+            total += item_total
+            
+            enhanced_items.append(enhanced_item)
     
+    # Update cart with enhanced items and total
+    cart['items'] = enhanced_items
     cart['total'] = total
     
     return jsonify(cart)
